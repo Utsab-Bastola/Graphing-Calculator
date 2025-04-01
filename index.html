@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphing Calculator</title>
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --dark-panel: #1e1e1e;
+            --dark-text: #e0e0e0;
+            --dark-grid: #333333;
+            --dark-axis: #bb86fc;
+            --dark-primary: #bb86fc;
+            --dark-secondary: #03dac6;
+            --dark-error: #cf6679;
+            
+            --light-bg: #f5f5f5;
+            --light-panel: #ffffff;
+            --light-text: #333333;
+            --light-grid: #e0e0e0;
+            --light-axis: #6200ee;
+            --light-primary: #6200ee;
+            --light-secondary: #03dac6;
+            --light-error: #b00020;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        body.light-mode {
+            --bg-color: var(--light-bg);
+            --panel-color: var(--light-panel);
+            --text-color: var(--light-text);
+            --grid-color: var(--light-grid);
+            --axis-color: var(--light-axis);
+            --primary-color: var(--light-primary);
+            --secondary-color: var(--light-secondary);
+            --error-color: var(--light-error);
+        }
+        
+        body.dark-mode {
+            --bg-color: var(--dark-bg);
+            --panel-color: var(--dark-panel);
+            --text-color: var(--dark-text);
+            --grid-color: var(--dark-grid);
+            --axis-color: var(--dark-axis);
+            --primary-color: var(--dark-primary);
+            --secondary-color: var(--dark-secondary);
+            --error-color: var(--dark-error);
+        }
+        
+        header {
+            background-color: var(--panel-color);
+            padding: 12px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-weight: 500;
+            font-size: 20px;
+            color: var(--primary-color);
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background-color: var(--panel-color);
+            border-right: 1px solid var(--grid-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .graph-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--panel-color);
+        }
+        
+        #graphCanvas {
+            display: block;
+            background-color: var(--panel-color);
+        }
+        
+        .expressions-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--grid-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .expressions-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .expression-item {
+            margin-bottom: 12px;
+            border-radius: 4px;
+            border: 1px solid var(--grid-color);
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .expression-header {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+        }
+        
+        .expression-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .expression-formula {
+            flex: 1;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .expression-actions {
+            display: flex;
+        }
+        
+        .expression-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        .expression-btn:hover {
+            opacity: 1;
+            color: var(--primary-color);
+        }
+        
+        .expression-input-container {
+            padding: 10px;
+        }
+        
+        .expression-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--grid-color);
+            border-radius: 4px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 14px;
+            background-color: var(--panel-color);
+            color: var(--text-color);
+        }
+        
+        .expression-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px;
+            border-top: 1px solid var(--grid-color);
+        }
+        
+        .color-option {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .color-option.selected {
+            border-color: var(--text-color);
+        }
+        
+        .error-message {
+            color: var(--error-color);
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+        
+        .zoom-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+        
+        .coordinates-display {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-family: 'Roboto Mono', monospace;
+            border: 1px solid var(--grid-color);
+        }
+        
+        .slider-container {
+            padding: 8px;
+            border-top: 1px solid var(--grid-color);
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .slider {
+            width: 100%;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--panel-color);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--grid-color);
+            border-radius: 4px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono&display=swap" rel="stylesheet">
+</head>
+<body class="dark-mode">
+    <header>
+        <div class="logo">Graphing Calculator</div>
+        <button class="theme-toggle" id="themeToggle">☀️ Light Mode</button>
+    </header>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="expressions-header">
+                <h3>Expressions</h3>
+                <button id="addExpression" class="btn">+ Add</button>
+            </div>
+            <div class="expressions-list" id="expressionsList">
+                <!-- Expressions will be added here -->
+            </div>
+        </div>
+        
+        <div class="graph-container">
+            <canvas id="graphCanvas"></canvas>
+            
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomIn">+</button>
+                <button class="zoom-btn" id="zoomOut">-</button>
+            </div>
+            
+            <div class="coordinates-display" id="coordinatesDisplay">
+                (0, 0)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Main Calculator Class
+        class GraphingCalculator {
+            constructor() {
+                // DOM Elements
+                this.canvas = document.getElementById('graphCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.expressionsList = document.getElementById('expressionsList');
+                this.coordinatesDisplay = document.getElementById('coordinatesDisplay');
+                this.themeToggle = document.getElementById('themeToggle');
+                
+                // Color palette (optimized for dark mode)
+                this.colorPalette = [
+                    '#bb86fc', // Purple
+                    '#03dac6', // Teal
+                    '#ff7597', // Pink
+                    '#ffb86c', // Orange
+                    '#6be5fd', // Light blue
+                    '#a5ff90', // Light green
+                    '#ffeb3b', // Yellow
+                    '#e91e63', // Magenta
+                    '#4caf50', // Green
+                    '#2196f3'  // Blue
+                ];
+                
+                // Calculator state
+                this.expressions = [];
+                this.viewport = {
+                    xMin: -10,
+                    xMax: 10,
+                    yMin: -10,
+                    yMax: 10
+                };
+                this.isDragging = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.pixelRatio = window.devicePixelRatio || 1;
+                this.animationFrameId = null;
+                this.isDarkMode = true;
+                
+                // Initialize
+                this.setupEventListeners();
+                this.resizeCanvas();
+                this.loadExpressions();
+                this.startAnimationLoop();
+            }
+            
+            // Set up all event listeners
+            setupEventListeners() {
+                // Window resize
+                window.addEventListener('resize', () => {
+                    this.resizeCanvas();
+                    this.render();
+                });
+                
+                // Theme toggle
+                this.themeToggle.addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+                
+                // Add expression button
+                document.getElementById('addExpression').addEventListener('click', () => {
+                    this.addExpression();
+                });
+                
+                // Zoom buttons
+                document.getElementById('zoomIn').addEventListener('click', () => {
+                    this.zoom(0.8);
+                });
+                
+                document.getElementById('zoomOut').addEventListener('click', () => {
+                    this.zoom(1.25);
+                });
+                
+                // Mouse events for coordinates display
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+                    
+                    // Update coordinates display
+                    const mathCoords = this.screenToMath(mouseX, mouseY);
+                    this.coordinatesDisplay.textContent = `(${mathCoords.x.toFixed(2)}, ${mathCoords.y.toFixed(2)})`;
+                });
+                
+                // Mouse wheel for zooming
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const factor = e.deltaY < 0 ? 0.8 : 1.25;
+                    this.zoom(factor);
+                });
+            }
+            
+            // Toggle between light and dark mode
+            toggleTheme() {
+                this.isDarkMode = !this.isDarkMode;
+                document.body.classList.toggle('light-mode', !this.isDarkMode);
+                document.body.classList.toggle('dark-mode', this.isDarkMode);
+                this.themeToggle.textContent = this.isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+                this.render();
+            }
+            
+            // Start the animation loop
+            startAnimationLoop() {
+                const animate = () => {
+                    this.render();
+                    this.animationFrameId = requestAnimationFrame(animate);
+                };
+                animate();
+            }
+            
+            // Stop the animation loop
+            stopAnimationLoop() {
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId);
+                }
+            }
+            
+            // Resize canvas to fit container with high DPI support
+            resizeCanvas() {
+                const container = document.querySelector('.graph-container');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                
+                // Adjust for high DPI displays
+                this.canvas.width = width * this.pixelRatio;
+                this.canvas.height = height * this.pixelRatio;
+                this.canvas.style.width = width + 'px';
+                this.canvas.style.height = height + 'px';
+                
+                // Scale the context to ensure proper drawing
+                this.ctx.scale(this.pixelRatio, this.pixelRatio);
+            }
+            
+            // Coordinate conversion functions
+            mathToScreen(x, y) {
+                const centerX = this.canvas.width / (2 * this.pixelRatio);
+                const centerY = this.canvas.height / (2 * this.pixelRatio);
+                const scaleX = (this.canvas.width / this.pixelRatio) / (this.viewport.xMax - this.viewport.xMin);
+                const scaleY = (this.canvas.height / this.pixelRatio) / (this.viewport.yMax - this.viewport.yMin);
+                
+                return {
+                    x: centerX + x * scaleX,
+                    y: centerY - y * scaleY
+                };
+            }
+            
+            screenToMath(screenX, screenY) {
+                const centerX = this.canvas.width / (2 * this.pixelRatio);
+                const centerY = this.canvas.height / (2 * this.pixelRatio);
+                const scaleX = (this.viewport.xMax - this.viewport.xMin) / (this.canvas.width / this.pixelRatio);
+                const scaleY = (this.viewport.yMax - this.viewport.yMin) / (this.canvas.height / this.pixelRatio);
+                
+                return {
+                    x: (screenX - centerX) * scaleX,
+                    y: (centerY - screenY) * scaleY
+                };
+            }
+            
+            // Zoom function (centered on origin)
+            zoom(factor) {
+                this.viewport.xMin *= factor;
+                this.viewport.xMax *= factor;
+                this.viewport.yMin *= factor;
+                this.viewport.yMax *= factor;
+                
+                // Prevent excessive zooming
+                const minZoom = 0.0001;
+                const maxZoom = 100000;
+                
+                if (this.viewport.xMax - this.viewport.xMin < minZoom) {
+                    const adjust = minZoom / (this.viewport.xMax - this.viewport.xMin);
+                    this.viewport.xMin *= adjust;
+                    this.viewport.xMax *= adjust;
+                    this.viewport.yMin *= adjust;
+                    this.viewport.yMax *= adjust;
+                } else if (this.viewport.xMax - this.viewport.xMin > maxZoom) {
+                    const adjust = maxZoom / (this.viewport.xMax - this.viewport.xMin);
+                    this.viewport.xMin *= adjust;
+                    this.viewport.xMax *= adjust;
+                    this.viewport.yMin *= adjust;
+                    this.viewport.yMax *= adjust;
+                }
+            }
+            
+            // Draw the grid and axes
+            drawGrid() {
+                const ctx = this.ctx;
+                const width = this.canvas.width / this.pixelRatio;
+                const height = this.canvas.height / this.pixelRatio;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const scaleX = width / (this.viewport.xMax - this.viewport.xMin);
+                const scaleY = height / (this.viewport.yMax - this.viewport.yMin);
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                // Calculate major and minor grid steps
+                const xRange = this.viewport.xMax - this.viewport.xMin;
+                const yRange = this.viewport.yMax - this.viewport.yMin;
+                
+                const majorStep = this.calculateGridStep(xRange);
+                const minorStep = majorStep / 5;
+                
+                // Draw minor grid lines
+                ctx.strokeStyle = this.isDarkMode ? '#333333' : '#e0e0e0';
+                ctx.lineWidth = 1;
+                
+                // Vertical minor grid lines
+                for (let x = Math.ceil(this.viewport.xMin / minorStep) * minorStep; x <= this.viewport.xMax; x += minorStep) {
+                    if (Math.abs(x) < 0.0001) continue; // Skip zero
+                    const screenX = centerX + x * scaleX;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, 0);
+                    ctx.lineTo(screenX, height);
+                    ctx.stroke();
+                }
+                
+                // Horizontal minor grid lines
+                for (let y = Math.ceil(this.viewport.yMin / minorStep) * minorStep; y <= this.viewport.yMax; y += minorStep) {
+                    if (Math.abs(y) < 0.0001) continue; // Skip zero
+                    const screenY = centerY - y * scaleY;
+                    ctx.beginPath();
+                    ctx.moveTo(0, screenY);
+                    ctx.lineTo(width, screenY);
+                    ctx.stroke();
+                }
+                
+                // Draw major grid lines
+                ctx.strokeStyle = this.isDarkMode ? '#444444' : '#d0d0d0';
+                ctx.lineWidth = 1;
+                
+                // Vertical major grid lines
+                for (let x = Math.ceil(this.viewport.xMin / majorStep) * majorStep; x <= this.viewport.xMax; x += majorStep) {
+                    const screenX = centerX + x * scaleX;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, 0);
+                    ctx.lineTo(screenX, height);
+                    ctx.stroke();
+                }
+                
+                // Horizontal major grid lines
+                for (let y = Math.ceil(this.viewport.yMin / majorStep) * majorStep; y <= this.viewport.yMax; y += majorStep) {
+                    const screenY = centerY - y * scaleY;
+                    ctx.beginPath();
+                    ctx.moveTo(0, screenY);
+                    ctx.lineTo(width, screenY);
+                    ctx.stroke();
+                }
+                
+                // Draw axes
+                ctx.strokeStyle = this.isDarkMode ? '#bb86fc' : '#6200ee';
+                ctx.lineWidth = 2;
+                
+                // X-axis
+                ctx.beginPath();
+                ctx.moveTo(0, centerY);
+                ctx.lineTo(width, centerY);
+                ctx.stroke();
+                
+                // Y-axis
+                ctx.beginPath();
+                ctx.moveTo(centerX, 0);
+                ctx.lineTo(centerX, height);
+                ctx.stroke();
+                
+                // Draw axis labels
+                ctx.fillStyle = this.isDarkMode ? '#e0e0e0' : '#333333';
+                ctx.font = '12px Roboto';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                
+                // X-axis labels
+                for (let x = Math.ceil(this.viewport.xMin / majorStep) * majorStep; x <= this.viewport.xMax; x += majorStep) {
+                    if (Math.abs(x) < 0.0001) continue; // Skip zero
+                    const screenX = centerX + x * scaleX;
+                    ctx.fillText(x.toFixed(this.getPrecision(majorStep)), screenX, centerY + 5);
+                }
+                
+                // Y-axis labels
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let y = Math.ceil(this.viewport.yMin / majorStep) * majorStep; y <= this.viewport.yMax; y += majorStep) {
+                    if (Math.abs(y) < 0.0001) continue; // Skip zero
+                    const screenY = centerY - y * scaleY;
+                    ctx.fillText(y.toFixed(this.getPrecision(majorStep)), centerX - 5, screenY);
+                }
+            }
+            
+            // Calculate appropriate decimal places for labels
+            getPrecision(step) {
+                if (step >= 1) return 0;
+                return Math.ceil(-Math.log10(step));
+            }
+            
+            // Calculate appropriate grid step based on visible range
+            calculateGridStep(range) {
+                const log10 = Math.log10(range);
+                const power = Math.floor(log10);
+                const fraction = log10 - power;
+                
+                let step = Math.pow(10, power);
+                
+                if (fraction < Math.log10(2)) {
+                    step *= 1;
+                } else if (fraction < Math.log10(5)) {
+                    step *= 2;
+                } else {
+                    step *= 5;
+                }
+                
+                return step;
+            }
+            
+            // Evaluate a mathematical expression
+            evaluateExpression(expr, x) {
+                try {
+                    // Replace common math notations with JavaScript equivalents
+                    const processedExpr = expr
+                        .replace(/\^/g, '**') // Handle exponents
+                        .replace(/([0-9]+)x/g, '$1*x') // Handle implicit multiplication (e.g., 2x)
+                        .replace(/x([0-9]+)/g, 'x*$1') // Handle implicit multiplication (e.g., x2)
+                        .replace(/sin\(/g, 'Math.sin(')
+                        .replace(/cos\(/g, 'Math.cos(')
+                        .replace(/tan\(/g, 'Math.tan(')
+                        .replace(/sqrt\(/g, 'Math.sqrt(')
+                        .replace(/log\(/g, 'Math.log10(')
+                        .replace(/ln\(/g, 'Math.log(')
+                        .replace(/abs\(/g, 'Math.abs(')
+                        .replace(/pi/g, 'Math.PI')
+                        .replace(/e/g, 'Math.E');
+                    
+                    // Use Function constructor for safe evaluation
+                    return new Function('x', `return ${processedExpr}`)(x);
+                } catch (e) {
+                    return NaN;
+                }
+            }
+            
+            // Draw a single expression with animation
+            drawExpression(expr, color, progress = 1) {
+                const ctx = this.ctx;
+                const width = this.canvas.width / this.pixelRatio;
+                const height = this.canvas.height / this.pixelRatio;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const scaleX = width / (this.viewport.xMax - this.viewport.xMin);
+                const scaleY = height / (this.viewport.yMax - this.viewport.yMin);
+                
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                // Calculate how many points to draw based on animation progress
+                const totalPoints = width;
+                const pointsToDraw = Math.floor(totalPoints * progress);
+                
+                for (let screenX = 0; screenX <= pointsToDraw; screenX++) {
+                    const mathX = (screenX - centerX) / scaleX;
+                    const y = this.evaluateExpression(expr, mathX);
+                    
+                    if (isNaN(y)) {
+                        continue;
+                    }
+                    
+                    const screenY = centerY - y * scaleY;
+                    
+                    if (screenX === 0) {
+                        ctx.moveTo(screenX, screenY);
+                    } else {
+                        // Only draw if the point is within reasonable bounds
+                        if (Math.abs(screenY) < height * 10) {
+                            ctx.lineTo(screenX, screenY);
+                        } else {
+                            ctx.moveTo(screenX + 1, screenY); // Start new segment
+                        }
+                    }
+                }
+                
+                ctx.stroke();
+            }
+            
+            // Render the entire graph with animations
+            render() {
+                this.drawGrid();
+                
+                // Draw each expression with animation
+                this.expressions.forEach((expr, index) => {
+                    if (expr.formula.trim()) {
+                        // Animate drawing if it's a new expression
+                        if (expr.animationProgress === undefined) {
+                            expr.animationProgress = 0;
+                            const animate = () => {
+                                expr.animationProgress += 0.02;
+                                if (expr.animationProgress >= 1) {
+                                    expr.animationProgress = 1;
+                                } else {
+                                    requestAnimationFrame(animate);
+                                }
+                            };
+                            animate();
+                        }
+                        
+                        this.drawExpression(expr.formula, expr.color, expr.animationProgress || 1);
+                    }
+                });
+            }
+            
+            // Add a new expression
+            addExpression(formula = '', color = null) {
+                const newExpr = {
+                    id: Date.now(),
+                    formula: formula,
+                    color: color || this.colorPalette[this.expressions.length % this.colorPalette.length],
+                    visible: true,
+                    animationProgress: 0
+                };
+                
+                this.expressions.push(newExpr);
+                this.saveExpressions();
+                this.renderExpressionsList();
+                
+                // Animate the new expression
+                const animate = () => {
+                    newExpr.animationProgress += 0.02;
+                    if (newExpr.animationProgress >= 1) {
+                        newExpr.animationProgress = 1;
+                    } else {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                animate();
+                
+                return newExpr;
+            }
+            
+            // Remove an expression
+            removeExpression(id) {
+                this.expressions = this.expressions.filter(expr => expr.id !== id);
+                this.saveExpressions();
+                this.renderExpressionsList();
+            }
+            
+            // Update an expression
+            updateExpression(id, updates) {
+                const expr = this.expressions.find(e => e.id === id);
+                if (expr) {
+                    Object.assign(expr, updates);
+                    if (updates.formula) {
+                        // Reset animation if formula changed
+                        expr.animationProgress = 0;
+                        const animate = () => {
+                            expr.animationProgress += 0.02;
+                            if (expr.animationProgress >= 1) {
+                                expr.animationProgress = 1;
+                            } else {
+                                requestAnimationFrame(animate);
+                            }
+                        };
+                        animate();
+                    }
+                    this.saveExpressions();
+                }
+            }
+            
+            // Save expressions to localStorage
+            saveExpressions() {
+                localStorage.setItem('graphingCalculatorExpressions', JSON.stringify(this.expressions));
+            }
+            
+            // Load expressions from localStorage
+            loadExpressions() {
+                const saved = localStorage.getItem('graphingCalculatorExpressions');
+                if (saved) {
+                    this.expressions = JSON.parse(saved);
+                    this.renderExpressionsList();
+                } else {
+                    // Add some default examples if no saved expressions
+                    this.addExpression('x^2');
+                    this.addExpression('sin(x)');
+                    this.addExpression('sqrt(25 - x^2)'); // Semi-circle
+                    this.addExpression('-sqrt(25 - x^2)'); // Other half of circle
+                }
+            }
+            
+            // Render the expressions list in the sidebar
+            renderExpressionsList() {
+                this.expressionsList.innerHTML = '';
+                
+                this.expressions.forEach(expr => {
+                    const item = document.createElement('div');
+                    item.className = 'expression-item';
+                    item.dataset.id = expr.id;
+                    
+                    // Expression header (color and formula preview)
+                    const header = document.createElement('div');
+                    header.className = 'expression-header';
+                    
+                    const colorIndicator = document.createElement('div');
+                    colorIndicator.className = 'expression-color';
+                    colorIndicator.style.backgroundColor = expr.color;
+                    colorIndicator.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        item.querySelector('.color-palette').style.display = 'flex';
+                    });
+                    
+                    const formulaPreview = document.createElement('div');
+                    formulaPreview.className = 'expression-formula';
+                    formulaPreview.textContent = expr.formula || 'Enter expression...';
+                    
+                    const actions = document.createElement('div');
+                    actions.className = 'expression-actions';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'expression-btn';
+                    deleteBtn.innerHTML = '&times;';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.removeExpression(expr.id);
+                    });
+                    
+                    actions.appendChild(deleteBtn);
+                    header.appendChild(colorIndicator);
+                    header.appendChild(formulaPreview);
+                    header.appendChild(actions);
+                    
+                    // Expression input
+                    const inputContainer = document.createElement('div');
+                    inputContainer.className = 'expression-input-container';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'expression-input';
+                    input.value = expr.formula;
+                    input.placeholder = 'e.g., x^2, sin(x), exp(x)';
+                    input.addEventListener('input', (e) => {
+                        this.updateExpression(expr.id, { formula: e.target.value });
+                        formulaPreview.textContent = e.target.value || 'Enter expression...';
+                    });
+                    
+                    // Color palette
+                    const palette = document.createElement('div');
+                    palette.className = 'color-palette';
+                    palette.style.display = 'none';
+                    
+                    this.colorPalette.forEach(color => {
+                        const colorOption = document.createElement('div');
+                        colorOption.className = `color-option ${color === expr.color ? 'selected' : ''}`;
+                        colorOption.style.backgroundColor = color;
+                        colorOption.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.updateExpression(expr.id, { color: color });
+                            colorIndicator.style.backgroundColor = color;
+                            palette.style.display = 'none';
+                            
+                            // Update selected state
+                            palette.querySelectorAll('.color-option').forEach(opt => {
+                                opt.classList.toggle('selected', opt.style.backgroundColor === color);
+                            });
+                        });
+                        palette.appendChild(colorOption);
+                    });
+                    
+                    // Hide palette when clicking elsewhere
+                    document.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('color-option') && 
+                            !e.target.classList.contains('expression-color')) {
+                            palette.style.display = 'none';
+                        }
+                    });
+                    
+                    inputContainer.appendChild(input);
+                    inputContainer.appendChild(palette);
+                    
+                    item.appendChild(header);
+                    item.appendChild(inputContainer);
+                    this.expressionsList.appendChild(item);
+                });
+            }
+        }
+        
+        // Initialize the calculator when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const calculator = new GraphingCalculator();
+        });
+    </script>
+</body>
+</html>
